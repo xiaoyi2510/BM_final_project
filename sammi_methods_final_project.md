@@ -42,7 +42,7 @@ cor(cancer_data$pct_public_coverage_alone, cancer_data$pct_public_coverage)
 
 ``` r
 cancer_data = cancer_data %>% 
-  select(-pct_some_col18_24, -pct_private_coverage_alone, -poverty_percent, -median_age_female, -median_age_male, -avg_ann_count, -avg_deaths_per_year) %>% 
+  select(-pct_some_col18_24, -pct_private_coverage_alone, -poverty_percent, -median_age_female, -median_age_male, -avg_ann_count, -avg_deaths_per_year, -pct_public_coverage, pct_hs25_over) %>% 
   separate(geography, into = c("county", "state"), sep = ", ") %>%
         mutate(
                 binned_inc_lowerb = str_split_fixed(binned_inc, ", ", 2)[ ,1] %>% parse_number(), 
