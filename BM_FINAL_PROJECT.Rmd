@@ -101,3 +101,12 @@ describe(cancer_tidy_data$income_cate)
         
 ```
 
+Reference:
+1. geographocal distribution of cancer mortality
+https://www.cancer.gov/news-events/cancer-currents-blog/2017/cancer-death-disparities
+
+2. social disparity:
+https://www.ncbi.nlm.nih.gov/pubmed/28718431
+
+3. socialeconomic factor
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2711979/
