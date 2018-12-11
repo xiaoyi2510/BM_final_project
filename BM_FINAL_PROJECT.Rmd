@@ -1,0 +1,61 @@
+---
+title: "Bm_final_project"
+author: "Yi Xiao"
+date: "10/12/2018"
+output: html_document
+---
+```{r}
+library(tidyverse)
+library(kableExtra)
+library(Hmisc)
+```
+
+1. load the dataset
+```{r}
+cancer_data <- read_csv("./data/Cancer_Registry.csv") %>%
+        janitor::clean_names()
+
+head(cancer_data)
+str(cancer_data)
+
+# number of recordings
+nrow(cancer_data)
+
+# number of variables
+ncol(cancer_data)
+
+```
+The Cancer Registry Dataset cantains information on cancer mortality rate across `r n_distinct(cancer_data$geography)` US counties. There are `r ncol(cancer_data)` variables which provide information on death rate and related demographical characteristics in each county. The outcome variable in this datset is `target_death rate` (continuous). 
+
+2. explore the data
+
+```{r}
+# 1. deal with missing data
+
+num_var <- cancer_data %>%
+        select(-c(binned_inc, geography))
+# summary table for all numberical variables:
+num_var %>%
+        skimr::skim_to_wide() %>% knitr::kable() %>% kable_styling(full_width = F, position = "left")
+
+cancer_data %>%
+   select(geography,binned_inc) %>%
+describe()
+
+# presence of large amount of missing data (over 20%)  in two variabls: pct_some_col18_24 and pct_private_coverage_alone
+# remove those two variables 
+
+```
+ 
+ 
+```{r}
+# 2. check normality
+ggplot(gather(num_var), aes(value)) + 
+    geom_histogram(bins = 10) + 
+    facet_wrap(~key, scales = 'free_x')
+```
+ 
+heavyly-left-skewed: avg_ann_count, avg_deaths_per_year, med_income, pop_est2015, avg_ann_count, median_age, pct_asian, pct_black, pct_other_race, pop_est2015, study_per_cap
+right-skewed: pct_white
+outcome variable has a roughly normal disribution.
+
