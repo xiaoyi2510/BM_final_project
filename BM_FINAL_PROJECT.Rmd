@@ -14,16 +14,6 @@ library(Hmisc)
 ```{r}
 cancer_data <- read_csv("./data/Cancer_Registry.csv") %>%
         janitor::clean_names()
-
-head(cancer_data)
-str(cancer_data)
-
-# number of recordings
-nrow(cancer_data)
-
-# number of variables
-ncol(cancer_data)
-
 ```
 The Cancer Registry Dataset cantains information on cancer mortality rate across `r n_distinct(cancer_data$geography)` US counties. There are `r ncol(cancer_data)` variables which provide information on death rate and related demographical characteristics in each county. The outcome variable in this datset is `target_death rate` (continuous). 
 
@@ -58,4 +48,26 @@ ggplot(gather(num_var), aes(value)) +
 heavyly-left-skewed: avg_ann_count, avg_deaths_per_year, med_income, pop_est2015, avg_ann_count, median_age, pct_asian, pct_black, pct_other_race, pop_est2015, study_per_cap
 right-skewed: pct_white
 outcome variable has a roughly normal disribution.
+
+3. tidy
+```{r}
+cancer_tidy_data = cancer_data %>% 
+        separate(geography, into = c("county", "state"), sep = ", ") %>%
+        mutate(
+                binned_inc_lowerb = str_split_fixed(binned_inc, ", ", 2)[ ,1] %>% parse_number(), 
+                binned_inc_upperb = str_split_fixed(binned_inc, ", ", 2)[ ,2] %>% parse_number(), 
+                binned_inc_mean = (binned_inc_lowerb + binned_inc_upperb)/2
+                ) %>%# calculate point estimate for variable binned_inc  
+         mutate(region = case_when(
+            state %in% c("Montana", "Arizona","Idaho","Colorado", "New     Mexico","Utah","Nevada","Wyoming","Alaska","California",
+            "Hawaii","Oregon","Washington") ~ "West",
+            state %in% c("Illinois","Indiana", "Michigan","Iowa","Ohio", "Kansas","Minnesota","Missouri","Wisconsin", "Nebraska","North Dakota","South Dakota") ~ "Midwest",
+            state %in% c("District of Columbia", "Delaware","Georgia",
+            "Maryland", "North Carolina","Florida","South Carolina",
+            "West Virginia","Kentucky", "Alabama","Virginia","Mississippi", "Arkansas","Tennessee","Louisiana","Oklahoma","Texas") ~ "South",
+             state %in%  c("Connecticut","Maine","Massachusetts","New Hampshire",
+             "Rhode Island","Vermont","New Jersey","New York",
+             "Pennsylvania") ~ "Northeast"
+                )) 
+```
 
