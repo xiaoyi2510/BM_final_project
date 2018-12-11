@@ -41,13 +41,24 @@ cor(cancer_data$pct_public_coverage_alone, cancer_data$pct_public_coverage)
     ## [1] 0.8658328
 
 ``` r
-cancer_data = cancer_data %>% 
-  select(-pct_some_col18_24, -pct_private_coverage_alone, -poverty_percent, -median_age_female, -median_age_male, -avg_ann_count, -avg_deaths_per_year, -pct_public_coverage, -pct_hs25_over, -pct_employed16_over) %>% 
-  separate(geography, into = c("county", "state"), sep = ", ") %>%
-        mutate(
-                binned_inc_lowerb = str_split_fixed(binned_inc, ", ", 2)[ ,1] %>% parse_number(), 
-                binned_inc_upperb = str_split_fixed(binned_inc, ", ", 2)[ ,2] %>% parse_number(), 
-                binned_inc_mean = (binned_inc_lowerb + binned_inc_upperb)/2)
+tidy_data = cancer_data %>% 
+  select(-pct_some_col18_24, -pct_private_coverage_alone, -poverty_percent, -median_age_female, -median_age_male, -avg_ann_count, -avg_deaths_per_year, -pct_public_coverage, -pct_hs25_over, -pct_employed16_over, -pct_married_households, -pct_emp_priv_coverage, -binned_inc, -pct_hs18_24, -pct_no_hs18_24, -pct_bach_deg18_24) %>% 
+  separate(geography, into = c("county", "state"), sep = ", ") %>% 
+   mutate(region = case_when(  
+            state %in% c("Montana", "Arizona","Idaho","Colorado", "New Mexico","Utah","Nevada","Wyoming","Alaska","California",
+            "Hawaii","Oregon","Washington") ~ "West",
+            state %in% c("Illinois","Indiana", "Michigan","Iowa","Ohio", "Kansas","Minnesota","Missouri","Wisconsin", "Nebraska","North Dakota","South Dakota") ~ "Midwest",
+            state %in% c("District of Columbia", "Delaware","Georgia",
+            "Maryland", "North Carolina","Florida","South Carolina",
+            "West Virginia","Kentucky", "Alabama","Virginia","Mississippi", "Arkansas","Tennessee","Louisiana","Oklahoma","Texas") ~ "South",
+             state %in%  c("Connecticut","Maine","Massachusetts","New Hampshire",
+             "Rhode Island","Vermont","New Jersey","New York",
+             "Pennsylvania") ~ "Northeast" ), region = as.factor(region) %>% fct_relevel(., "West", "Midwest", "Northeast", "South"))
+
+tidy_data = tidy_data %>%
+  select(-county, -state) %>% 
+  mutate(pct_non_black = pct_asian + pct_white + pct_other_race) %>% 
+  select(-pct_asian, -pct_white, -pct_other_race)
 ```
 
 Start with full model
