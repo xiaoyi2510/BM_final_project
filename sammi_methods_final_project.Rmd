@@ -12,7 +12,7 @@ library(kableExtra)
 library(Hmisc)
 ```
 
-Load Data
+**Load Data**
 ```{r, message = FALSE}
 cancer_data <- read_csv("./data/Cancer_Registry.csv") %>%
         janitor::clean_names()
@@ -20,13 +20,21 @@ cancer_data <- read_csv("./data/Cancer_Registry.csv") %>%
 
 ### Data Exploration
 
-* `r round(cancer_data %>% mutate(na_data = is.na(pct_some_col18_24)) %>% count(na_data) %>% filter(na_data == TRUE) %>% select(n)/nrow(cancer_data)*100, digits = 1)`% of the variable `pct_some_col18_24` is missing. Therefore, we will remove it from the dataset.
+1. `r round(cancer_data %>% mutate(na_data = is.na(pct_some_col18_24)) %>% count(na_data) %>% filter(na_data == TRUE) %>% select(n)/nrow(cancer_data)*100, digits = 1)`% of the variable `pct_some_col18_24` is missing. Therefore, we will remove it from the dataset.
 
-* `r round(cancer_data %>% mutate(na_data = is.na(pct_private_coverage_alone)) %>% count(na_data) %>% filter(na_data == TRUE) %>% select(n)/nrow(cancer_data)*100, digits = 1)`% of the variable `pct_private_coverage_alone` is missing. Therefore, we will remove it from the dataset.
+2. `r round(cancer_data %>% mutate(na_data = is.na(pct_private_coverage_alone)) %>% count(na_data) %>% filter(na_data == TRUE) %>% select(n)/nrow(cancer_data)*100, digits = 1)`% of the variable `pct_private_coverage_alone` is missing. Therefore, we will remove it from the dataset.
 
-* `med_income` and `poverty_percent` are highly correlated with a correlation coefficient of `r round(cor(cancer_data$med_income, cancer_data$poverty_percent)*100, digits = 2)`%. To account for this, we will remove `poverty_percent` from the dataset.
+3. `med_income` and `poverty_percent` are highly correlated with a correlation coefficient of `r round(cor(cancer_data$med_income, cancer_data$poverty_percent)*100, digits = 2)`%. To account for this, we will remove `poverty_percent` from the dataset.
 
-* `median_age_female` and `median_age_male` are highly correlated with a correlation coefficient of `r round(cor(cancer_data$median_age_female, cancer_data$median_age_male)*100, digits = 2)`%. Thus, we will only consider `median_age` for our data analysis.
+4. `median_age_female` and `median_age_male` are highly correlated with a correlation coefficient of `r round(cor(cancer_data$median_age_female, cancer_data$median_age_male)*100, digits = 2)`%. Thus, we will only consider `median_age` for our data analysis.
+
+5. `avg_ann_count` and `avg_deaths_per_year` have a high correlation coefficient of `r round(cor(cancer_data$avg_ann_count, cancer_data$avg_deaths_per_year)*100, digits = 2)`%. Both of these variables are also highly correlated with `pop_est2015`. We will remove `avg_ann_count` and `avg_deaths_per_year`.
+
+```{r}
+cor(cancer_data$pct_private_coverage, cancer_data$pct_public_coverage)
+cor(cancer_data$pct_emp_priv_coverage, cancer_data$pct_private_coverage)
+cor(cancer_data$pct_public_coverage_alone, cancer_data$pct_public_coverage)
+```
 
 
 ```{r, include = FALSE}
@@ -35,17 +43,23 @@ cor(cancer_data$median_age, cancer_data$median_age_male)
 cor(cancer_data$median_age_female, cancer_data$median_age_male)
 ```
 
-
 ```{r}
 cancer_data = cancer_data %>% 
-  select(-pct_some_col18_24, -pct_private_coverage_alone, -poverty_percent, -median_age_female, -median_age_male)
+  select(-pct_some_col18_24, -pct_private_coverage_alone, -poverty_percent, -median_age_female, -median_age_male, -avg_ann_count, -avg_deaths_per_year) %>% 
+  separate(geography, into = c("county", "state"), sep = ", ") %>%
+        mutate(
+                binned_inc_lowerb = str_split_fixed(binned_inc, ", ", 2)[ ,1] %>% parse_number(), 
+                binned_inc_upperb = str_split_fixed(binned_inc, ", ", 2)[ ,2] %>% parse_number(), 
+                binned_inc_mean = (binned_inc_lowerb + binned_inc_upperb)/2)
 ```
 
 Start with full model
 ```{r}
-##mult.fit <- lm(target_death_rate ~ ., data = cancer_data)
-##summary(mult.fit)
+mult.fit <- lm(target_death_rate ~ ., data = cancer_data)
 ```
 
+```{r}
+
+```
 
 
