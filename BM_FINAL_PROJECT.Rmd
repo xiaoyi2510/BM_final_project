@@ -45,9 +45,28 @@ ggplot(gather(num_var), aes(value)) +
     facet_wrap(~key, scales = 'free_x')
 ```
  
-heavyly-left-skewed: avg_ann_count, avg_deaths_per_year, med_income, pop_est2015, avg_ann_count, median_age, pct_asian, pct_black, pct_other_race, pop_est2015, study_per_cap
+heavyly-left-skewed: avg_ann_count, avg_deaths_per_year, med_income, pop_est2015, median_age, pct_asian, pct_black, pct_other_race, study_per_cap: we could categorise those continuous variables
 right-skewed: pct_white
 outcome variable has a roughly normal disribution.
+
+```{r}
+# check colinearity
+colin = cor(num_var) %>%
+
+```
+
+avg_ann_count: avg_deaths_per_year, pop_est2015
+avg_deaths_per_year: pop_est2015
+med_income: poverty_pct, pct_bach_deg25_over, pct_private_coverage, pct_private_coverage_alone, pct_emp_priv_coverage, pct_public_coverage, pct_public_coverage_alone
+poverty_percent: pct_private_coverage, pct_public_coverage_alone
+pct_unemployed16_over: avg_death_per_year
+
+
+some comments:
+1. med_income and poverty_percent: high colinearity & basically the same thing: consider removing one of them
+2.avg-ann-count and population / avg_death and population: duplicate information with "incidence" and the outcome variable: remove?
+
+
 
 3. tidy
 ```{r}
@@ -58,7 +77,8 @@ cancer_tidy_data = cancer_data %>%
                 binned_inc_upperb = str_split_fixed(binned_inc, ", ", 2)[ ,2] %>% parse_number(), 
                 binned_inc_mean = (binned_inc_lowerb + binned_inc_upperb)/2
                 ) %>%# calculate point estimate for variable binned_inc  
-         mutate(region = case_when(
+         # counties were categorized according to census region
+        mutate(region = case_when(  
             state %in% c("Montana", "Arizona","Idaho","Colorado", "New     Mexico","Utah","Nevada","Wyoming","Alaska","California",
             "Hawaii","Oregon","Washington") ~ "West",
             state %in% c("Illinois","Indiana", "Michigan","Iowa","Ohio", "Kansas","Minnesota","Missouri","Wisconsin", "Nebraska","North Dakota","South Dakota") ~ "Midwest",
@@ -67,7 +87,17 @@ cancer_tidy_data = cancer_data %>%
             "West Virginia","Kentucky", "Alabama","Virginia","Mississippi", "Arkansas","Tennessee","Louisiana","Oklahoma","Texas") ~ "South",
              state %in%  c("Connecticut","Maine","Massachusetts","New Hampshire",
              "Rhode Island","Vermont","New Jersey","New York",
-             "Pennsylvania") ~ "Northeast"
-                )) 
+             "Pennsylvania") ~ "Northeast" ), region = as.factor(region) %>% fct_relevel(., "West", "Midwest", "Northeast", "South")) %>%
+        mutate(income_cate = case_when(med_income < 35000 ~ "category1",
+                                       med_income >=35000 & med_income < 42999 ~ "category2",
+                                        med_income >= 43000 & med_income <= 52999 ~ "category3",
+                                        med_income >= 53000 & med_income <= 62999~ "category4",
+                                        med_income >= 63000  ~"category5"), income_cate = fct_relevel(income_cate, c("category1", "category2", "category3", "category4", "category5"))) 
+
+describe(cancer_tidy_data$income_cate)
+ 
+        
+    
+        
 ```
 
