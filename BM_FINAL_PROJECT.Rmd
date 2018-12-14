@@ -51,7 +51,7 @@ outcome variable has a roughly normal disribution.
 
 ```{r}
 # check colinearity
-colin = cor(num_var) %>%
+colin = cor(num_var) 
 
 ```
 
@@ -110,3 +110,5 @@ https://www.ncbi.nlm.nih.gov/pubmed/28718431
 
 3. socialeconomic factor
 https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2711979/
+
+
