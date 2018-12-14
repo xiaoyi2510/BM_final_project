@@ -88,12 +88,7 @@ tidy_data = cancer_data %>%
 tidy_data = tidy_data %>%
   select(-county, -state) %>% 
   mutate(pct_non_black = pct_asian + pct_white + pct_other_race) %>% 
-  select(-pct_asian, -pct_white, -pct_other_race)
-        
- 
-        
-    
-        
+  select(-pct_asian, -pct_white, -pct_other_race, -pct_private_coverage, -pct_public_coverage_alone, -pct_black)
 ```
 
 
@@ -114,24 +109,49 @@ step(all_fit, direction='backward') # AIC criteria
 ```{r}
 # Cp criterion:
 tidy_data2 = data.matrix(tidy_data)
-leaps(x = tidy_data2[,-1], y = tidy_data2[, 1], nbest = 2, method = "Cp")
+leaps(x = tidy_data2[,-1], y = tidy_data2[, 1], nbest = 1, method = "Cp")
 # adjusted R^2 criterion:
-leaps(x = tidy_data2[ , -1], y = tidy_data2[, 1], nbest = 2, method = "adjr2")
+leaps(x = tidy_data2[ , -1], y = tidy_data2[, 1], nbest = 1, method = "adjr2")
 
 
-best_summary = summary(regsubsets(target_death_rate ~ ., data = tidy_data)) 
+best_summary = summary(regsubsets(target_death_rate ~ ., data = tidy_data, nvmax = NULL)) 
+
+# Plots of Cp and Adj-R2 as functions of parameters
+par(mar=c(4,4,1,1))
+par(mfrow=c(1,2))
+
+plot(1:14, best_summary$cp, xlab="No of parameters", ylab="Cp Statistic")
+abline(0,1)
+
+plot(1:14, best_summary$adjr2, xlab="No of parameters", ylab="Adj R2")
 
 # plot
- tibble(x = 1:8, y = best_summary$cp) %>%
+ tibble(x = 1:14, y = best_summary$cp) %>%
  ggplot(aes(x = x, y = y)) +
     geom_point() +
     labs(x = "NO of predictors", y = "Cp")
  
-  tibble(x = 1:8, y = best_summary$adjr2) %>%
+  tibble(x = 1:14, y = best_summary$adjr2) %>%
  ggplot(aes(x = x, y = y)) +
     geom_point() +
     labs(x = "NO of predictors", y = "Adjusted-R-squared")
+  
 ```
+## model from criterion selection
+7 predictors: target_death_rate ~ incidence_rate + med_income + percent_married + pct_bach_deg25_over + pct_unemployed16_over + regionMidwest + regionSouth 
+
+6 predictors: target_death_rate ~ incidence_rate + percent_married + pct_bach_deg25_over + pct_unemployed16_over + regionMidwest + regionSouth
+
+## Predicted model from forward elimination: 
+mult_forward_fit = lm(target_death_rate ~ pct_bach_deg25_over + incidence_rate + region + pct_unemployed16_over + percent_married + med_income + birth_rate, data = tidy_data)
+
+## model from stepwise
+stepwise_model_fit = lm(target_death_rate ~ incidence_rate + med_income + 
+    percent_married + pct_bach_deg25_over + pct_unemployed16_over + 
+    birth_rate + region)
+
+
+
 
 Reference:
 1. geographocal distribution of cancer mortality
