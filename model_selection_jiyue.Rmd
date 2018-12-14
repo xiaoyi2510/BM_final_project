@@ -111,18 +111,6 @@ plot(2:13, rs$adjr2, xlab="No of parameters", ylab="Adj R2")
 
 ```{r}
 
-# AIC of the 6-predictor model:
-
-multi.fit6 <- lm(Lnsurvival ~ Age + Gender + Bloodclot + Alcheav + Progindex + Enzyme, data=data_surg)
-AIC(multi.fit6)
-
-# BIC
-AIC(multi.fit6, k = log(length(Lnsurvival)))
-
-# AIC of the 4-predictor model:
-multi.fit4 <- lm(Lnsurvival ~ Enzyme + Progindex + Alcheav + Bloodclot)
-AIC(multi.fit4)
-
 # How do the 6- and 4-predictors models compare in terms of AIC, R-adj, Cp?
 
 #############################################################################
@@ -148,6 +136,8 @@ round(best(multi.fit4, nbest = 1), 4)
 ```
 
 
+## summary of models
+
 model_1:(p = 8) 
 region + pct_bach_deg25_over + percent_married +incidence_rate + med_income + pct_unemployed16_over + birth_rate
 
@@ -157,4 +147,5 @@ pop_est2015 + model_1
 model_automatic:
 model 1
 
+we choose to pick model_1 as our final model.
 
