@@ -8,6 +8,7 @@ output: html_document
 library(tidyverse)
 library(kableExtra)
 library(Hmisc)
+library(leaps)
 ```
 
 1. load the dataset
@@ -51,7 +52,7 @@ outcome variable has a roughly normal disribution.
 
 ```{r}
 # check colinearity
-colin = cor(num_var) %>%
+colin = cor(num_var) 
 
 ```
 
@@ -70,16 +71,11 @@ some comments:
 
 3. tidy
 ```{r}
-cancer_tidy_data = cancer_data %>% 
-        separate(geography, into = c("county", "state"), sep = ", ") %>%
-        mutate(
-                binned_inc_lowerb = str_split_fixed(binned_inc, ", ", 2)[ ,1] %>% parse_number(), 
-                binned_inc_upperb = str_split_fixed(binned_inc, ", ", 2)[ ,2] %>% parse_number(), 
-                binned_inc_mean = (binned_inc_lowerb + binned_inc_upperb)/2
-                ) %>%# calculate point estimate for variable binned_inc  
-         # counties were categorized according to census region
-        mutate(region = case_when(  
-            state %in% c("Montana", "Arizona","Idaho","Colorado", "New     Mexico","Utah","Nevada","Wyoming","Alaska","California",
+tidy_data = cancer_data %>% 
+  select(-pct_some_col18_24, -pct_private_coverage_alone, -poverty_percent, -median_age_female, -median_age_male, -avg_ann_count, -avg_deaths_per_year, -pct_public_coverage, -pct_hs25_over, -pct_employed16_over, -pct_married_households, -pct_emp_priv_coverage, -binned_inc, -pct_hs18_24, -pct_no_hs18_24, -pct_bach_deg18_24) %>% 
+  separate(geography, into = c("county", "state"), sep = ", ") %>% 
+   mutate(region = case_when(  
+            state %in% c("Montana", "Arizona","Idaho","Colorado", "New Mexico","Utah","Nevada","Wyoming","Alaska","California",
             "Hawaii","Oregon","Washington") ~ "West",
             state %in% c("Illinois","Indiana", "Michigan","Iowa","Ohio", "Kansas","Minnesota","Missouri","Wisconsin", "Nebraska","North Dakota","South Dakota") ~ "Midwest",
             state %in% c("District of Columbia", "Delaware","Georgia",
@@ -87,18 +83,54 @@ cancer_tidy_data = cancer_data %>%
             "West Virginia","Kentucky", "Alabama","Virginia","Mississippi", "Arkansas","Tennessee","Louisiana","Oklahoma","Texas") ~ "South",
              state %in%  c("Connecticut","Maine","Massachusetts","New Hampshire",
              "Rhode Island","Vermont","New Jersey","New York",
-             "Pennsylvania") ~ "Northeast" ), region = as.factor(region) %>% fct_relevel(., "West", "Midwest", "Northeast", "South")) %>%
-        mutate(income_cate = case_when(med_income < 35000 ~ "category1",
-                                       med_income >=35000 & med_income < 42999 ~ "category2",
-                                        med_income >= 43000 & med_income <= 52999 ~ "category3",
-                                        med_income >= 53000 & med_income <= 62999~ "category4",
-                                        med_income >= 63000  ~"category5"), income_cate = fct_relevel(income_cate, c("category1", "category2", "category3", "category4", "category5"))) 
+             "Pennsylvania") ~ "Northeast" ), region = as.factor(region) %>% fct_relevel(., "West", "Midwest", "Northeast", "South"))
 
-describe(cancer_tidy_data$income_cate)
+tidy_data = tidy_data %>%
+  select(-county, -state) %>% 
+  mutate(pct_non_black = pct_asian + pct_white + pct_other_race) %>% 
+  select(-pct_asian, -pct_white, -pct_other_race)
+        
  
         
     
         
+```
+
+
+4. criterion 
+
+
+```{r}
+all_fit = lm(target_death_rate ~., data = tidy_data)
+summary(all_fit)
+```
+
+
+stepwise regression
+```{r}
+step(all_fit, direction='backward') # AIC criteria
+```
+
+```{r}
+# Cp criterion:
+tidy_data2 = data.matrix(tidy_data)
+leaps(x = tidy_data2[,-1], y = tidy_data2[, 1], nbest = 2, method = "Cp")
+# adjusted R^2 criterion:
+leaps(x = tidy_data2[ , -1], y = tidy_data2[, 1], nbest = 2, method = "adjr2")
+
+
+best_summary = summary(regsubsets(target_death_rate ~ ., data = tidy_data)) 
+
+# plot
+ tibble(x = 1:8, y = best_summary$cp) %>%
+ ggplot(aes(x = x, y = y)) +
+    geom_point() +
+    labs(x = "NO of predictors", y = "Cp")
+ 
+  tibble(x = 1:8, y = best_summary$adjr2) %>%
+ ggplot(aes(x = x, y = y)) +
+    geom_point() +
+    labs(x = "NO of predictors", y = "Adjusted-R-squared")
 ```
 
 Reference:
