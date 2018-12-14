@@ -61,17 +61,266 @@ tidy_data = cancer_data %>%
 tidy_data = tidy_data %>%
   select(-county, -state) %>% 
   mutate(pct_non_black = pct_asian + pct_white + pct_other_race) %>% 
-  select(-pct_asian, -pct_white, -pct_other_race)
+  select(-pct_asian, -pct_white, -pct_other_race, -pct_private_coverage, -pct_public_coverage_alone, -pct_black)
         
 ```
 
 Start with full model
 ```{r}
-mult.fit <- lm(target_death_rate ~ ., data = cancer_data)
+mult.fit <- lm(target_death_rate ~ ., data = tidy_data)
 ```
 
 ```{r}
+library(broom)
 
+## Forward elimination
+## Run regression on all individual variables 
+
+fit1 = lm(target_death_rate ~ incidence_rate, data = tidy_data)
+tidy(fit1)
+
+fit2 = lm(target_death_rate ~ med_income, data = tidy_data)
+tidy(fit2)
+
+fit3 = lm(target_death_rate ~ pop_est2015, data = tidy_data)
+tidy(fit3)
+
+fit4 = lm(target_death_rate ~ study_per_cap, data = tidy_data)
+tidy(fit4)
+
+fit5 = lm(target_death_rate ~ median_age, data = tidy_data)
+tidy(fit5)
+
+fit6 <- lm(target_death_rate ~ avg_household_size, data = tidy_data)
+tidy(fit6)
+
+fit7 <- lm(target_death_rate ~ percent_married, data = tidy_data)
+tidy(fit7)
+
+fit8 = lm(target_death_rate ~ pct_bach_deg25_over, data = tidy_data)
+tidy(fit8)
+
+fit9 = lm(target_death_rate ~ pct_unemployed16_over, data = tidy_data)
+tidy(fit9)
+
+fit13 <- lm(target_death_rate ~ pct_non_black, data = tidy_data)
+tidy(fit13)
+
+fit14 <- lm(target_death_rate ~ birth_rate, data = tidy_data)
+tidy(fit14)
+
+fit15 <- lm(target_death_rate ~ region, data = tidy_data)
+tidy(fit15)
+
+## Begin forward elimination -- Step 1
+
+forward1 = lm(target_death_rate ~ pct_bach_deg25_over, data = tidy_data)
+tidy(forward1)
+
+fit1 = update(forward1, . ~ . +incidence_rate)
+tidy(fit1)
+
+fit2 = update(forward1, . ~ . +med_income)
+tidy(fit2)
+
+fit3 = update(forward1, . ~ . +pop_est2015)
+tidy(fit3)
+
+fit4 = update(forward1, . ~ . +study_per_cap)
+tidy(fit4)
+
+fit5 = update(forward1, . ~ . +median_age)
+tidy(fit5)
+
+fit6 = update(forward1, . ~ . +avg_household_size)
+tidy(fit6)
+
+fit7 = update(forward1, . ~ . +percent_married)
+tidy(fit7)
+
+fit8 = update(forward1, . ~ . +pct_unemployed16_over)
+tidy(fit8)
+
+fit12 = update(forward1, . ~ . +pct_non_black)
+tidy(fit12)
+
+fit13 = update(forward1, . ~ . +birth_rate)
+tidy(fit13)
+
+fit14 = update(forward1, . ~ . +region)
+tidy(fit14)
+
+## Step 2
+
+forward2 <- update(forward1, . ~ . +incidence_rate)
+tidy(forward2)
+
+fit1 = update(forward2, . ~ . +med_income)
+tidy(fit1)
+
+fit2 = update(forward2, . ~ . +pop_est2015)
+tidy(fit2)
+
+fit3 = update(forward2, . ~ . +study_per_cap)
+tidy(fit3)
+
+fit4 = update(forward2, . ~ . +median_age)
+tidy(fit4)
+
+fit5 = update(forward2, . ~ . +avg_household_size)
+tidy(fit5)
+
+fit6 = update(forward2, . ~ . +percent_married)
+tidy(fit6)
+
+fit7 = update(forward2, . ~ . +pct_unemployed16_over)
+tidy(fit7)
+
+fit11 = update(forward2, . ~ . +pct_non_black)
+tidy(fit11)
+
+fit12 = update(forward2, . ~ . +birth_rate)
+tidy(fit12)
+
+fit13 = update(forward2, . ~ . +region)
+tidy(fit13)
+
+## Step 3
+forward3 = update(forward2, . ~ . + region)
+tidy(forward3)
+
+fit1 = update(forward3, . ~ . +med_income)
+tidy(fit1)
+
+fit2 = update(forward3, . ~ . +pop_est2015)
+tidy(fit2)
+
+fit3 = update(forward3, . ~ . +study_per_cap)
+tidy(fit3)
+
+fit4 = update(forward3, . ~ . +median_age)
+tidy(fit4)
+
+fit5 = update(forward3, . ~ . +avg_household_size)
+tidy(fit5)
+
+fit6 = update(forward3, . ~ . +percent_married)
+tidy(fit6)
+
+fit7 = update(forward3, . ~ . +pct_unemployed16_over)
+tidy(fit7)
+
+fit10 = update(forward3, . ~ . +pct_non_black)
+tidy(fit10)
+
+fit11 = update(forward3, . ~ . +birth_rate)
+tidy(fit11)
+
+
+## Step 4
+forward4 = update(forward3, . ~ . + pct_unemployed16_over)
+tidy(forward4)
+
+fit1 = update(forward4, . ~ . +med_income)
+tidy(fit1)
+
+fit2 = update(forward4, . ~ . +pop_est2015)
+tidy(fit2)
+
+fit3 = update(forward4, . ~ . +study_per_cap)
+tidy(fit3)
+
+fit4 = update(forward4, . ~ . +median_age)
+tidy(fit4)
+
+fit5 = update(forward4, . ~ . +avg_household_size)
+tidy(fit5)
+
+fit6 = update(forward4, . ~ . +percent_married)
+tidy(fit6)
+
+
+fit10 = update(forward4, . ~ . +pct_non_black)
+tidy(fit10)
+
+fit11 = update(forward4, . ~ . +birth_rate)
+tidy(fit11)
+
+## Step 5
+forward5 = update(forward4, . ~ . + percent_married)
+tidy(forward5)
+
+fit1 = update(forward5, . ~ . +med_income)
+tidy(fit1)
+
+fit2 = update(forward5, . ~ . +pop_est2015)
+tidy(fit2)
+
+fit3 = update(forward5, . ~ . +study_per_cap)
+tidy(fit3)
+
+fit4 = update(forward5, . ~ . +median_age)
+tidy(fit4)
+
+fit5 = update(forward5, . ~ . +avg_household_size)
+tidy(fit5)
+
+fit9 = update(forward5, . ~ . +pct_non_black)
+tidy(fit9)
+
+fit10 = update(forward5, . ~ . +birth_rate)
+tidy(fit10)
+
+## Step 6
+
+forward6 = update(forward5, . ~ . + med_income)
+tidy(forward6)
+
+fit2 = update(forward6, . ~ . +pop_est2015)
+tidy(fit2)
+
+fit3 = update(forward6, . ~ . +study_per_cap)
+tidy(fit3)
+
+fit4 = update(forward6, . ~ . +median_age)
+tidy(fit4)
+
+fit5 = update(forward6, . ~ . +avg_household_size)
+tidy(fit5)
+
+fit8 = update(forward6, . ~ . +pct_non_black)
+tidy(fit8)
+
+fit9 = update(forward6, . ~ . +birth_rate)
+tidy(fit9)
+
+## Step 7
+
+forward7 = update(forward6, . ~ . + birth_rate)
+tidy(forward7)
+
+fit2 = update(forward7, . ~ . +pop_est2015)
+tidy(fit2)
+
+fit3 = update(forward7, . ~ . +study_per_cap)
+tidy(fit3)
+
+fit4 = update(forward7, . ~ . +median_age)
+tidy(fit4)
+
+fit5 = update(forward7, . ~ . +avg_household_size)
+tidy(fit5)
+
+fit6 = update(forward7, . ~ . +pct_non_black)
+tidy(fit6)
+
+
+## Predicted model from forward elimination: 
+mult_forward_fit = lm(target_death_rate ~ pct_bach_deg25_over + incidence_rate + region + pct_unemployed16_over + percent_married + med_income + birth_rate, data = tidy_data)
+
+tidy(mult_forward_fit)
+
+HH::vif(mult.fit)
 ```
 
 
