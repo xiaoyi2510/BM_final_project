@@ -61,7 +61,7 @@ tidy_data = cancer_data %>%
 tidy_data = tidy_data %>%
   select(-county, -state) %>% 
   mutate(pct_non_black = pct_asian + pct_white + pct_other_race) %>% 
-  select(-pct_asian, -pct_white, -pct_other_race)
+  select(-pct_asian, -pct_white, -pct_other_race, -pct_private_coverage, -pct_public_coverage_alone, -pct_black)
         
 ```
 
@@ -103,15 +103,6 @@ tidy(fit8)
 fit9 = lm(target_death_rate ~ pct_unemployed16_over, data = tidy_data)
 tidy(fit9)
 
-fit10 = lm(target_death_rate ~ pct_private_coverage, data = tidy_data)
-tidy(fit10)
-
-fit11 = lm(target_death_rate ~ pct_public_coverage_alone, data = tidy_data)
-tidy(fit11)
-
-fit12 = lm(target_death_rate ~ pct_black, data = tidy_data)
-tidy(fit12)
-
 fit13 <- lm(target_death_rate ~ pct_non_black, data = tidy_data)
 tidy(fit13)
 
@@ -150,15 +141,6 @@ tidy(fit7)
 fit8 = update(forward1, . ~ . +pct_unemployed16_over)
 tidy(fit8)
 
-fit9 = update(forward1, . ~ . +pct_private_coverage)
-tidy(fit9)
-
-fit10 = update(forward1, . ~ . +pct_public_coverage_alone)
-tidy(fit10)
-
-fit11 = update(forward1, . ~ . +pct_black)
-tidy(fit11)
-
 fit12 = update(forward1, . ~ . +pct_non_black)
 tidy(fit12)
 
@@ -194,15 +176,6 @@ tidy(fit6)
 fit7 = update(forward2, . ~ . +pct_unemployed16_over)
 tidy(fit7)
 
-fit8 = update(forward2, . ~ . +pct_private_coverage)
-tidy(fit8)
-
-fit9 = update(forward2, . ~ . +pct_public_coverage_alone)
-tidy(fit9)
-
-fit10 = update(forward2, . ~ . +pct_black)
-tidy(fit10)
-
 fit11 = update(forward2, . ~ . +pct_non_black)
 tidy(fit11)
 
@@ -213,7 +186,7 @@ fit13 = update(forward2, . ~ . +region)
 tidy(fit13)
 
 ## Step 3
-forward3 = update(forward2, . ~ . + pct_private_coverage)
+forward3 = update(forward2, . ~ . + region)
 tidy(forward3)
 
 fit1 = update(forward3, . ~ . +med_income)
@@ -237,23 +210,15 @@ tidy(fit6)
 fit7 = update(forward3, . ~ . +pct_unemployed16_over)
 tidy(fit7)
 
-fit8 = update(forward3, . ~ . +pct_public_coverage_alone)
-tidy(fit8)
-
-fit9 = update(forward3, . ~ . +pct_black)
-tidy(fit9)
-
 fit10 = update(forward3, . ~ . +pct_non_black)
 tidy(fit10)
 
 fit11 = update(forward3, . ~ . +birth_rate)
 tidy(fit11)
 
-fit12 = update(forward3, . ~ . +region)
-tidy(fit12)
 
 ## Step 4
-forward4 = update(forward3, . ~ . + region)
+forward4 = update(forward3, . ~ . + pct_unemployed16_over)
 tidy(forward4)
 
 fit1 = update(forward4, . ~ . +med_income)
@@ -274,14 +239,6 @@ tidy(fit5)
 fit6 = update(forward4, . ~ . +percent_married)
 tidy(fit6)
 
-fit7 = update(forward4, . ~ . +pct_unemployed16_over)
-tidy(fit7)
-
-fit8 = update(forward4, . ~ . +pct_public_coverage_alone)
-tidy(fit8)
-
-fit9 = update(forward4, . ~ . +pct_black)
-tidy(fit9)
 
 fit10 = update(forward4, . ~ . +pct_non_black)
 tidy(fit10)
@@ -290,7 +247,7 @@ fit11 = update(forward4, . ~ . +birth_rate)
 tidy(fit11)
 
 ## Step 5
-forward5 = update(forward4, . ~ . + pct_unemployed16_over)
+forward5 = update(forward4, . ~ . + percent_married)
 tidy(forward5)
 
 fit1 = update(forward5, . ~ . +med_income)
@@ -308,15 +265,6 @@ tidy(fit4)
 fit5 = update(forward5, . ~ . +avg_household_size)
 tidy(fit5)
 
-fit6 = update(forward5, . ~ . +percent_married)
-tidy(fit6)
-
-fit7 = update(forward5, . ~ . +pct_public_coverage_alone)
-tidy(fit7)
-
-fit8 = update(forward5, . ~ . +pct_black)
-tidy(fit8)
-
 fit9 = update(forward5, . ~ . +pct_non_black)
 tidy(fit9)
 
@@ -325,11 +273,8 @@ tidy(fit10)
 
 ## Step 6
 
-forward6 = update(forward5, . ~ . + pct_public_coverage_alone)
+forward6 = update(forward5, . ~ . + med_income)
 tidy(forward6)
-
-fit1 = update(forward6, . ~ . +med_income)
-tidy(fit1)
 
 fit2 = update(forward6, . ~ . +pop_est2015)
 tidy(fit2)
@@ -343,12 +288,6 @@ tidy(fit4)
 fit5 = update(forward6, . ~ . +avg_household_size)
 tidy(fit5)
 
-fit6 = update(forward6, . ~ . +percent_married)
-tidy(fit6)
-
-fit7 = update(forward6, . ~ . +pct_black)
-tidy(fit7)
-
 fit8 = update(forward6, . ~ . +pct_non_black)
 tidy(fit8)
 
@@ -359,9 +298,6 @@ tidy(fit9)
 
 forward7 = update(forward6, . ~ . + birth_rate)
 tidy(forward7)
-
-fit1 = update(forward7, . ~ . +med_income)
-tidy(fit1)
 
 fit2 = update(forward7, . ~ . +pop_est2015)
 tidy(fit2)
@@ -375,89 +311,16 @@ tidy(fit4)
 fit5 = update(forward7, . ~ . +avg_household_size)
 tidy(fit5)
 
-fit6 = update(forward7, . ~ . +percent_married)
+fit6 = update(forward7, . ~ . +pct_non_black)
 tidy(fit6)
 
-fit7 = update(forward7, . ~ . +pct_black)
-tidy(fit7)
-
-fit8 = update(forward7, . ~ . +pct_non_black)
-tidy(fit8)
-
-## Step 8
-
-forward8 = update(forward7, . ~ . + percent_married)
-tidy(forward8)
-
-fit1 = update(forward8, . ~ . +med_income)
-tidy(fit1)
-
-fit2 = update(forward8, . ~ . +pop_est2015)
-tidy(fit2)
-
-fit3 = update(forward8, . ~ . +study_per_cap)
-tidy(fit3)
-
-fit4 = update(forward8, . ~ . +median_age)
-tidy(fit4)
-
-fit5 = update(forward8, . ~ . +avg_household_size)
-tidy(fit5)
-
-fit6 = update(forward8, . ~ . +pct_black)
-tidy(fit6)
-
-fit7 = update(forward8, . ~ . +pct_non_black)
-tidy(fit7)
-
-## Step 9
-
-forward9 = update(forward8, . ~ . + pct_black)
-tidy(forward9)
-
-fit1 = update(forward9, . ~ . +med_income)
-tidy(fit1)
-
-fit2 = update(forward9, . ~ . +pop_est2015)
-tidy(fit2)
-
-fit3 = update(forward9, . ~ . +study_per_cap)
-tidy(fit3)
-
-fit4 = update(forward9, . ~ . +median_age)
-tidy(fit4)
-
-fit5 = update(forward9, . ~ . +avg_household_size)
-tidy(fit5)
-
-fit8 = update(forward9, . ~ . +pct_non_black)
-tidy(fit8)
-
-
-## Step 10
-
-forward10 = update(forward9, . ~ . + pct_non_black)
-tidy(forward10)
-
-fit1 = update(forward10, . ~ . +med_income)
-tidy(fit1)
-
-fit2 = update(forward10, . ~ . +pop_est2015)
-tidy(fit2)
-
-fit3 = update(forward10, . ~ . +study_per_cap)
-tidy(fit3)
-
-fit4 = update(forward10, . ~ . +median_age)
-tidy(fit4)
-
-fit5 = update(forward10, . ~ . +avg_household_size)
-tidy(fit5)
 
 ## Predicted model from forward elimination: 
-mult_forward_fit = lm(target_death_rate ~ pct_bach_deg25_over + incidence_rate + pct_private_coverage + region + pct_unemployed16_over + pct_public_coverage_alone + birth_rate + percent_married + pct_black + pct_non_black, data = tidy_data)
+mult_forward_fit = lm(target_death_rate ~ pct_bach_deg25_over + incidence_rate + region + pct_unemployed16_over + percent_married + med_income + birth_rate, data = tidy_data)
 
 tidy(mult_forward_fit)
+
+HH::vif(mult.fit)
 ```
 
 
