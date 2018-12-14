@@ -40,7 +40,8 @@ tidy_data = original_data %>%
              "Rhode Island","Vermont","New Jersey","New York",
              "Pennsylvania") ~ "Northeast" ), region = as.factor(region) %>% fct_relevel(., "West", "Midwest", "Northeast", "South")) %>% 
   mutate(pct_non_black = pct_asian + pct_white + pct_other_race)%>% 
-select(target_death_rate,incidence_rate, med_income, pop_est2015, study_per_cap, median_age, avg_household_size,percent_married, pct_bach_deg25_over, pct_unemployed16_over, pct_non_black, birth_rate, region)
+select(target_death_rate,incidence_rate, med_income, pop_est2015, study_per_cap, median_age, avg_household_size,percent_married, pct_bach_deg25_over, pct_unemployed16_over, pct_non_black, birth_rate, region) %>% 
+        filter(median_age < 100)
 
 tidy_data %>% select(-region) %>% cor() %>% 
   corrplot(method = "square", addCoef.col = "black", tl.col="black", tl.srt=45, insig = "blank", 
@@ -111,12 +112,6 @@ plot(2:13, rs$adjr2, xlab="No of parameters", ylab="Adj R2")
 
 ```{r}
 
-# How do the 6- and 4-predictors models compare in terms of AIC, R-adj, Cp?
-
-#############################################################################
-#   A more compact way to look at the test-based results                    #
-#############################################################################
-
 best <- function(model, ...) 
 {
   subsets <- regsubsets(formula(model), model.frame(model), nvmax = NULL, ...)
@@ -125,14 +120,9 @@ best <- function(model, ...)
   
   return(subsets)
 }  
+
 best(full_model)
 
-m = "Lnsurvival ~ ."
-formula(m)
-model.frame(m)
-subsets <- regsubsets(formula(m), model.frame(m))
-# Select the 'best' model of all subsets for 4-predictor model
-round(best(multi.fit4, nbest = 1), 4)
 ```
 
 
@@ -149,3 +139,12 @@ model 1
 
 we choose to pick model_1 as our final model.
 
+## model diagnostics
+```{r}
+par(mfrow=c(2,2))
+plot(step5)
+
+# check outliers: 279, 1050, 1211, 1355
+tidy_data %>% filter(row.names(tidy_data) %in% c(279, 1050, 1211, 1355)) %>% View()
+skimr::skim(tidy_data$study_per_cap)
+```
