@@ -324,3 +324,8 @@ HH::vif(mult.fit)
 ```
 
 
+```{r}
+summary(mult_forward_fit)
+
+```
+

@@ -1246,3 +1246,36 @@ HH::vif(mult.fit)
     ##              1.106677              2.640044              1.617178 
     ##           regionSouth         pct_non_black 
     ##              2.848598              2.256071
+
+``` r
+summary(mult_forward_fit)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = target_death_rate ~ pct_bach_deg25_over + incidence_rate + 
+    ##     region + pct_unemployed16_over + percent_married + med_income + 
+    ##     birth_rate, data = tidy_data)
+    ## 
+    ## Residuals:
+    ##      Min       1Q   Median       3Q      Max 
+    ## -122.864  -11.109   -0.475   10.618  133.334 
+    ## 
+    ## Coefficients:
+    ##                         Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)            1.158e+02  5.558e+00  20.842  < 2e-16 ***
+    ## pct_bach_deg25_over   -1.577e+00  1.002e-01 -15.734  < 2e-16 ***
+    ## incidence_rate         2.016e-01  6.897e-03  29.234  < 2e-16 ***
+    ## regionMidwest          9.487e+00  1.213e+00   7.823 7.06e-15 ***
+    ## regionNortheast        2.181e+00  1.747e+00   1.248 0.212022    
+    ## regionSouth            1.488e+01  1.169e+00  12.731  < 2e-16 ***
+    ## pct_unemployed16_over  1.020e+00  1.388e-01   7.347 2.59e-13 ***
+    ## percent_married       -2.578e-01  6.741e-02  -3.824 0.000134 ***
+    ## med_income            -1.744e-04  4.651e-05  -3.749 0.000181 ***
+    ## birth_rate            -5.627e-01  1.854e-01  -3.035 0.002424 ** 
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 19.66 on 3037 degrees of freedom
+    ## Multiple R-squared:  0.4997, Adjusted R-squared:  0.4982 
+    ## F-statistic:   337 on 9 and 3037 DF,  p-value: < 2.2e-16
