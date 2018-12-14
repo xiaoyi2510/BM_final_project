@@ -1,0 +1,151 @@
+---
+title: "backward"
+author: "JiyueQin"
+date: "December 11, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(corrplot)
+library(leaps)
+```
+
+## load data
+
+```{r}
+original_data = read_csv("./data/Cancer_Registry.csv") %>%
+        janitor::clean_names() 
+
+cancer_data = original_data %>% select(-binned_inc, -geography)
+
+full_model = lm(target_death_rate~. , data = cancer_data)
+
+HH::vif(full_model)
+```
+
+## tidy data
+
+```{r}
+tidy_data = original_data %>% 
+  separate(geography, into = c("county", "state"), sep = ", ") %>% 
+   mutate(region = case_when(  
+            state %in% c("Montana", "Arizona","Idaho","Colorado", "New Mexico","Utah","Nevada","Wyoming","Alaska","California",
+            "Hawaii","Oregon","Washington") ~ "West",
+            state %in% c("Illinois","Indiana", "Michigan","Iowa","Ohio", "Kansas","Minnesota","Missouri","Wisconsin", "Nebraska","North Dakota","South Dakota") ~ "Midwest",
+            state %in% c("District of Columbia", "Delaware","Georgia",
+            "Maryland", "North Carolina","Florida","South Carolina",
+            "West Virginia","Kentucky", "Alabama","Virginia","Mississippi", "Arkansas","Tennessee","Louisiana","Oklahoma","Texas") ~ "South",
+             state %in%  c("Connecticut","Maine","Massachusetts","New Hampshire",
+             "Rhode Island","Vermont","New Jersey","New York",
+             "Pennsylvania") ~ "Northeast" ), region = as.factor(region) %>% fct_relevel(., "West", "Midwest", "Northeast", "South")) %>% 
+  mutate(pct_non_black = pct_asian + pct_white + pct_other_race)%>% 
+select(target_death_rate,incidence_rate, med_income, pop_est2015, study_per_cap, median_age, avg_household_size,percent_married, pct_bach_deg25_over, pct_unemployed16_over, pct_non_black, birth_rate, region)
+
+tidy_data %>% select(-region) %>% cor() %>% 
+  corrplot(method = "square", addCoef.col = "black", tl.col="black", tl.srt=45, insig = "blank", 
+         diag=FALSE, number.cex = .7)
+
+full_model = lm(target_death_rate~. , data = tidy_data)
+
+HH::vif(full_model)
+```
+
+
+## backward selection
+
+do backward selection
+
+```{r}
+mult.fit <- lm(target_death_rate ~ ., data = tidy_data)
+summary(mult.fit)
+
+# No study_per_cap
+step1<-update(mult.fit, . ~ . - study_per_cap)
+summary(step1)
+
+# No avg_household_size
+step2<-update(step1, . ~ . - avg_household_size)
+summary(step2)
+
+# No median_age
+step3<-update(step2, . ~ . - median_age)
+summary(step3)
+
+# No pct_non_black
+step4<-update(step3, . ~ . - pct_non_black)
+summary(step4)
+
+# No pct_non_black
+step5<-update(step4, . ~ . - pop_est2015)
+summary(step5)
+summary(step4)
+```
+
+```{r}
+
+leaps(x = tidy[,2:13], y = tidy[,1], nbest=2, method="Cp")
+tidy = data.matrix(tidy_data)
+
+# Printing the 2 best models of each size, using the adjusted R^2 criterion:
+leaps(x = tidy[,2:13], y = tidy[,1], nbest=2, method="adjr2")
+
+# Summary of models for each size (one model per size)
+b<-regsubsets(target_death_rate~., data=tidy_data, nvmax = NULL)
+   (rs<-summary(b))
+
+formula(model)
+regsubsets(formula(step4), data=tidy_data) %>% summary()
+# Plots of Cp and Adj-R2 as functions of parameters
+par(mar=c(4,4,1,1))
+par(mfrow=c(1,2))
+
+plot(2:13, rs$cp, xlab="No of parameters", ylab="Cp Statistic")
+abline(0,1)
+
+plot(2:13, rs$adjr2, xlab="No of parameters", ylab="Adj R2")
+
+
+```
+
+
+```{r}
+
+# How do the 6- and 4-predictors models compare in terms of AIC, R-adj, Cp?
+
+#############################################################################
+#   A more compact way to look at the test-based results                    #
+#############################################################################
+
+best <- function(model, ...) 
+{
+  subsets <- regsubsets(formula(model), model.frame(model), nvmax = NULL, ...)
+  subsets <- with(summary(subsets),
+                  cbind(p = as.numeric(rownames(which)), which, rss, rsq, adjr2, cp, bic))
+  
+  return(subsets)
+}  
+best(full_model)
+
+m = "Lnsurvival ~ ."
+formula(m)
+model.frame(m)
+subsets <- regsubsets(formula(m), model.frame(m))
+# Select the 'best' model of all subsets for 4-predictor model
+round(best(multi.fit4, nbest = 1), 4)
+```
+
+
+## summary of models
+
+model_1:(p = 8) 
+region + pct_bach_deg25_over + percent_married +incidence_rate + med_income + pct_unemployed16_over + birth_rate
+
+model_2: (p = 9)
+pop_est2015 + model_1
+
+model_automatic:
+model 1
+
+we choose to pick model_1 as our final model.
+
