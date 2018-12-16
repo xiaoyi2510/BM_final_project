@@ -2,7 +2,7 @@
 title: "Modeling Variation of Cancer Mortality Rate in the United States"
 author: "Group 1: Samantha Brown, Ruiyang Li, Jiyue Qin, Yi Xiao"
 date: "12/16/2018"
-output: pdf_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -13,6 +13,7 @@ library(caret)
 library(leaps)
 library(broom)
 ```
+
 
 # Data Cleaning and Exploratory Analysis
 
@@ -63,7 +64,7 @@ boxplot(cancer_data$median_age)
 
 # 3. look at linear relationship
 
-## relationship with median age 
+## ralationship between cancer mortality rate and median age - unrealistic value observed!
 cancer_data %>%
   select(target_death_rate, median_age) %>% 
   ggplot(aes(x = median_age, y = target_death_rate)) +                    
@@ -73,6 +74,7 @@ cancer_data %>%
              y = "Average cancer mortalities per capita from 2010 to 2016") +
         theme_bw() +
         theme(axis.text=element_text(size=20))
+
 
 ## relationship with other continuous variables
 num_var %>%
@@ -84,7 +86,33 @@ num_var %>%
         geom_point(na.rm = TRUE) +
         geom_smooth(se = FALSE, method = "lm") 
 
+
+ 
+# histogram of all variables 
+num_tidy = cancer_data %>%
+        select(-c(geography, binned_inc))
+
+ggplot(gather(num_tidy), aes(value)) + 
+    geom_histogram(bins = 10) + 
+    facet_wrap(~key, scales = 'free_x')
+
+# plot the histogram of the outcome: target death rate
+cancer_data %>% 
+  ggplot(aes(x = target_death_rate)) + 
+    geom_histogram(aes(y = ..density..),  
+                   binwidth = 5, colour = "black", fill = "white") +
+    geom_density(alpha = .2, fill = "lightblue") +
+    geom_vline(aes(xintercept = mean(target_death_rate, na.rm = T)),   
+               color = "blue", linetype = "dashed", size = 1) +
+        labs(x = "Average cancer mortalities per capita from 2010 to 2016",
+             y = "Distribution") +
+        theme_bw() +
+        theme(axis.text=element_text(size=20))
+
 ```
+ 
+Outcome variable target death rate has a normal distribution, which suggests linear regression could be an appropriate approach. Heavyly-left-skewed variables include avg_ann_count, avg_deaths_per_year, med_income, pop_est2015, median_age, pct_asian, pct_black, pct_other_race, study_per_cap. Right-skewed variable includes pct_white. We could consider categorising those continuous variables
+
 
 tidy procedures:
 1. eliminate the three variables with large amount of missing data
@@ -538,3 +566,22 @@ RMSE_CV = desc_summary(all_MSE$RMSE) %>%
   select(type, everything())
 RMSE_CV %>% knitr::kable(digits = 3)
 ```
+=======
+## relationship between cancer mortality rate and 
+num_var %>%
+        select(-median_age) %>%
+  select(target_death_rate, avg_ann_count:birth_rate) %>% 
+  gather(key = key, value, avg_ann_count:birth_rate) %>%   
+  ggplot(aes(x = value, y = target_death_rate)) +                    
+    facet_wrap(~ key, scales = "free") +  
+    geom_point(na.rm = TRUE) +
+  geom_smooth(se = FALSE, method = "lm") 
+
+
+```
+Several unreasonable values can be observed in median age variable. 
+
+
+## 2.5 check collinearity 
+
+>>>>>>> 4ecabe65784c5c588c2def7378d1237ac887a296
