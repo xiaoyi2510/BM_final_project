@@ -9,6 +9,13 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r}
+library(tidyverse)
+library(kableExtra)
+library(Hmisc)
+library(leaps)
+```
+
 ## R Code for Final Project
 
 #1. load the dataset
@@ -88,17 +95,6 @@ cancer_data %>%
   ggplot(aes(x = median_age, y = target_death_rate)) +                    
     geom_point(na.rm = TRUE) +
     geom_smooth(se = FALSE, method = "lm") +
-        labs(x = "median age", 
-             y = "Average cancer mortalities per capita from 2010 to 2016") +
-        theme_bw() +
-        theme(axis.text=element_text(size=20))
-
-## remove such values and check the relationship again
-tidy_data %>%
-  select(target_death_rate, median_age) %>% 
-  ggplot(aes(x = median_age, y = target_death_rate)) +                    
-    geom_point(na.rm = TRUE) +
-    geom_smooth(se = FALSE, method = "lm")  +
         labs(x = "median age", 
              y = "Average cancer mortalities per capita from 2010 to 2016") +
         theme_bw() +
