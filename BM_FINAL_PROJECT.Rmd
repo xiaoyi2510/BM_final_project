@@ -24,31 +24,117 @@ The Cancer Registry Dataset cantains information on cancer mortality rate across
 # 1. deal with missing data
 
 num_var <- cancer_data %>%
-        select(-c(binned_inc, geography))
+       dplyr::select(-c(binned_inc, geography))
 # summary table for all numberical variables:
 num_var %>%
         skimr::skim_to_wide() %>% knitr::kable() %>% kable_styling(full_width = F, position = "left")
 
 cancer_data %>%
-   select(geography,binned_inc) %>%
+   dplyr::select(geography,binned_inc) %>%
 describe()
 
 # presence of large amount of missing data (over 20%)  in two variabls: pct_some_col18_24 and pct_private_coverage_alone
 # remove those two variables 
+
+cancer_data %>%
+  summarise_all(funs(sum(is.na(.)))) %>% 
+  gather(term, na_num, avg_ann_count:birth_rate) %>% 
+  filter(na_num > 0) %>% 
+  arrange(desc(na_num)) %>%
+  mutate(percent = round(na_num/sum(na_num), 2)) %>%
+        kable(col.names = c("variable name",
+                           "number of missing value",
+                           "percent"
+                           )) %>%
+        kable_styling(position = "left")
 
 ```
  
  
 ```{r}
 # 2. check normality
-ggplot(gather(num_var), aes(value)) + 
+num_tidy = tidy_data %>%
+        select(-region)
+
+ggplot(gather(num_tidy), aes(value)) + 
     geom_histogram(bins = 10) + 
     facet_wrap(~key, scales = 'free_x')
+
+
+tidy_data %>% 
+  ggplot(aes(x = target_death_rate)) + 
+    geom_histogram(aes(y = ..density..),  
+                   binwidth = 5, colour = "black", fill = "white") +
+    geom_density(alpha = .2, fill = "lightblue") +
+    geom_vline(aes(xintercept = mean(target_death_rate, na.rm = T)),   
+               color = "blue", linetype = "dashed", size = 1) +
+        labs(x = "Average cancer mortalities per capita from 2010 to 2016",
+             y = "Distribution") +
+        theme_bw() +
+        theme(axis.text=element_text(size=20))
+
 ```
  
 heavyly-left-skewed: avg_ann_count, avg_deaths_per_year, med_income, pop_est2015, median_age, pct_asian, pct_black, pct_other_race, study_per_cap: we could categorise those continuous variables
 right-skewed: pct_white
 outcome variable has a roughly normal disribution.
+
+```{r}
+# check linear relationship
+cancer_data %>%
+  select(target_death_rate, median_age) %>% 
+  ggplot(aes(x = median_age, y = target_death_rate)) +                    
+    geom_point(na.rm = TRUE) +
+    geom_smooth(se = FALSE, method = "lm") +
+        labs(x = "median age", 
+             y = "Average cancer mortalities per capita from 2010 to 2016") +
+        theme_bw() +
+        theme(axis.text=element_text(size=20))
+
+tidy_data %>%
+  select(target_death_rate, median_age) %>% 
+  ggplot(aes(x = median_age, y = target_death_rate)) +                    
+    geom_point(na.rm = TRUE) +
+    geom_smooth(se = FALSE, method = "lm")  +
+        labs(x = "median age", 
+             y = "Average cancer mortalities per capita from 2010 to 2016") +
+        theme_bw() +
+        theme(axis.text=element_text(size=20))
+
+num_var %>%
+        select(-median_age) %>%
+  select(target_death_rate, avg_ann_count:birth_rate) %>% 
+  gather(key = key, value, avg_ann_count:birth_rate) %>%   
+  ggplot(aes(x = value, y = target_death_rate)) +                    
+    facet_wrap(~ key, scales = "free") +  
+    geom_point(na.rm = TRUE) +
+  geom_smooth(se = FALSE, method = "lm") 
+
+
+```
+
+
+```{r}
+
+## map
+
+library(usmap)
+library(ggplot2)
+
+a = plot_usmap(regions = "counties") + 
+  labs(title = "US Counties", subtitle = "This is a blank map of the counties of the United States.") + 
+  theme(panel.background = element_rect(colour = "black", fill = "lightblue"))
+a$data
+
+cancer_data4 = cancer_data %>%
+        separate(geography, into = c("county", "state"), sep = ", ") 
+        
+plot_usmap(data = cancer_data4, values = "target_death_rate", lines = "red") + 
+  scale_fill_continuous(name = "Population (2015)", label = scales::comma) + 
+  theme(legend.position = "right")
+
+
+```
 
 ```{r}
 # check colinearity
@@ -88,7 +174,8 @@ tidy_data = cancer_data %>%
 tidy_data = tidy_data %>%
   select(-county, -state) %>% 
   mutate(pct_non_black = pct_asian + pct_white + pct_other_race) %>% 
-  select(-pct_asian, -pct_white, -pct_other_race, -pct_private_coverage, -pct_public_coverage_alone, -pct_black)
+  select(-pct_asian, -pct_white, -pct_other_race, -pct_private_coverage, -pct_public_coverage_alone, -pct_black) %>%
+        filter(!(median_age > 100))
 ```
 
 
@@ -149,6 +236,34 @@ mult_forward_fit = lm(target_death_rate ~ pct_bach_deg25_over + incidence_rate +
 stepwise_model_fit = lm(target_death_rate ~ incidence_rate + med_income + 
     percent_married + pct_bach_deg25_over + pct_unemployed16_over + 
     birth_rate + region)
+    
+```{r}
+best_fit = lm(target_death_rate ~ region + pct_bach_deg25_over + percent_married +incidence_rate + med_income + pct_unemployed16_over + birth_rate, data = tidy_data)
+
+# rstandard function gives the INTERNALLY studentized residuals 
+stu_res = rstandard(best_fit)
+outliers_y = stu_res[abs(stu_res)>2.5]
+
+## no outliers in y is found according to rule of thumb
+
+library(MASS)
+boxcox(best_fit)
+```
+    
+```{r}
+
+# Measures of influence:
+# Gives DFFITS, Cook's Distance, Hat diagonal elements, and others.
+
+influence.measures(best_fit) %>%
+        summary()
+
+par(mfrow = c(2,2))
+plot(best_fit)
+
+```
+
+
 
 
 
