@@ -1,0 +1,12 @@
+---
+title: "Modeling Variation of Cancer Mortality Rate in the United States"
+author: "Group 1: Samantha Brown, Ruiyang Li, Jiyue Qin, Yi Xiao"
+date: "12/16/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Code for Final Project
