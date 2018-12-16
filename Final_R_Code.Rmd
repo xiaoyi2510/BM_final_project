@@ -6,7 +6,535 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(corrplot)
+library(leaps)
+library(caret)
+library(leaps)
+library(broom)
 ```
 
-## R Code for Final Project
+# Data Cleaning and Exploratory Analysis
+
+## load data
+
+```{r message=FALSE}
+cancer_data <- read_csv("./data/Cancer_Registry.csv") %>%
+        janitor::clean_names()
+```
+
+The Cancer Registry Dataset cantains information on cancer mortality rate across `r n_distinct(cancer_data$geography)` US counties. There are `r ncol(cancer_data)` variables which provide information on death rate and related demographical characteristics in each county. The outcome variable in this datset is `target_death rate` (continuous). 
+
+## tidy data
+
+```{r}
+# get numeric variables
+
+num_var <- cancer_data %>%
+       dplyr::select(-c(binned_inc, geography))
+
+# summary table for all numberical variables:
+ 
+num_var %>% skimr::skim_to_wide()%>% knitr::kable(digits = 3) %>% kableExtra::kable_styling(full_width = T, position = "left")
+
+
+# 1. check missing data
+
+## presence of large amount of missing data (over 5%)  in three variabls: pct_some_col18_24(75%), pct_private_coverage_alone(20%) and pct_employed16_over(5%)
+
+
+cancer_data %>%
+  summarise_all(funs(sum(is.na(.)))) %>% 
+  gather(term, na_num, avg_ann_count:birth_rate) %>% 
+  filter(na_num > 0) %>% 
+  arrange(desc(na_num)) %>%
+  mutate(percent = round(na_num/sum(na_num), 2)) %>%
+        knitr::kable(col.names = c("variable name",
+                           "number of missing value",
+                           "percent"
+                           )) %>%
+        kableExtra::kable_styling(position = "left")
+
+# 2. check abnormal values 
+
+## median age bigger than 100 is abnormal
+
+boxplot(cancer_data$median_age)
+
+# 3. look at linear relationship
+
+## relationship with median age 
+cancer_data %>%
+  select(target_death_rate, median_age) %>% 
+  ggplot(aes(x = median_age, y = target_death_rate)) +                    
+    geom_point(na.rm = TRUE) +
+    geom_smooth(se = FALSE, method = "lm") +
+        labs(x = "median age", 
+             y = "Average cancer mortalities per capita from 2010 to 2016") +
+        theme_bw() +
+        theme(axis.text=element_text(size=20))
+
+## relationship with other continuous variables
+num_var %>%
+        select(-median_age) %>%
+        select(target_death_rate, avg_ann_count:birth_rate) %>%
+        gather(key = key, value, avg_ann_count:birth_rate) %>%
+        ggplot(aes(x = value, y = target_death_rate)) +
+        facet_wrap(~ key, scales = "free") +
+        geom_point(na.rm = TRUE) +
+        geom_smooth(se = FALSE, method = "lm") 
+
+```
+
+tidy procedures:
+1. eliminate the three variables with large amount of missing data
+
+2. filter abnormal observations in `median_age`
+
+3. reclassify the 4 race-related variables into `pct_black` and `pct_non_black`.
+
+4. recategorize counties into four regions according to their geographical location including West, Midwest, Northeast and South. 
+
+5. discarded the categorical variable `binned_inc`
+
+```{r}
+tidy_data = cancer_data %>%
+        separate(geography, into = c("county", "state"), sep = ", ") %>%
+        mutate(region = case_when(  
+            state %in% c("Montana", "Arizona","Idaho","Colorado", "New Mexico","Utah","Nevada","Wyoming","Alaska","California",
+            "Hawaii","Oregon","Washington") ~ "West",
+            state %in% c("Illinois","Indiana", "Michigan","Iowa","Ohio", "Kansas","Minnesota","Missouri","Wisconsin", "Nebraska","North Dakota","South Dakota") ~ "Midwest",
+            state %in% c("District of Columbia", "Delaware","Georgia",
+            "Maryland", "North Carolina","Florida","South Carolina",
+            "West Virginia","Kentucky", "Alabama","Virginia","Mississippi", "Arkansas","Tennessee","Louisiana","Oklahoma","Texas") ~ "South",
+             state %in%  c("Connecticut","Maine","Massachusetts","New Hampshire",
+             "Rhode Island","Vermont","New Jersey","New York",
+             "Pennsylvania") ~ "Northeast" ), region = as.factor(region) %>% fct_relevel(., "West", "Midwest", "Northeast", "South")) %>%
+        mutate(pct_non_black = pct_asian + pct_white + pct_other_race) %>%
+        select(-pct_asian, -pct_white, -pct_other_race, -state, -county, -binned_inc, -pct_some_col18_24, -pct_employed16_over, -pct_private_coverage_alone) %>% 
+        filter(median_age < 100)
+
+```
+
+## intial variables selection
+
+```{r}
+# check collinearity
+tidy_data %>% select(-region) %>% cor()
+
+# eliminate those variables with high correlations, 13 variables remainned
+tidy_data = tidy_data %>% 
+        select(target_death_rate,incidence_rate, med_income, pop_est2015, study_per_cap, median_age, avg_household_size,percent_married, pct_bach_deg25_over, pct_unemployed16_over, pct_non_black, birth_rate, region)
+
+# correlation plot
+tidy_data %>% select(-region) %>% 
+        cor() %>%
+        corrplot(method = "square", addCoef.col = "black", tl.col="black", tl.srt=45, insig = "blank", diag=FALSE, number.cex = .7)
+
+# descriptive statistics of selected variables
+tidy_data %>% select(-region) %>% skimr::skim_to_wide()%>% knitr::kable(digits = 3) %>% kableExtra::kable_styling(full_width = T, position = "left")
+```
+
+# model selection
+
+## automatic approaches
+
+### *backward elimination*
+
+```{r backward}
+mult.fit <- lm(target_death_rate ~ ., data = tidy_data)
+summary(mult.fit)
+
+# No study_per_cap
+step1<-update(mult.fit, . ~ . - study_per_cap)
+summary(step1)
+
+# No avg_household_size
+step2<-update(step1, . ~ . - avg_household_size)
+summary(step2)
+
+# No median_age
+step3<-update(step2, . ~ . - median_age)
+summary(step3)
+
+# No pct_non_black
+step4<-update(step3, . ~ . - pct_non_black)
+summary(step4)
+
+# No pct_non_black
+step5<-update(step4, . ~ . - pop_est2015)
+#########################################################################
+summary(step5) %>% broom::tidy() %>%  knitr::kable(digits = 3) %>% kableExtra::kable_styling(full_width = T, position = "left")
+```
+
+best model(7 predictors): 
+region + pct_bach_deg25_over + percent_married +incidence_rate + med_income + pct_unemployed16_over + birth_rate
+
+### *forward elimination*
+```{r forward}
+# Run regression on all individual variables 
+
+fit1 = lm(target_death_rate ~ incidence_rate, data = tidy_data)
+tidy(fit1)
+
+fit2 = lm(target_death_rate ~ med_income, data = tidy_data)
+tidy(fit2)
+
+fit3 = lm(target_death_rate ~ pop_est2015, data = tidy_data)
+tidy(fit3)
+
+fit4 = lm(target_death_rate ~ study_per_cap, data = tidy_data)
+tidy(fit4)
+
+fit5 = lm(target_death_rate ~ median_age, data = tidy_data)
+tidy(fit5)
+
+fit6 <- lm(target_death_rate ~ avg_household_size, data = tidy_data)
+tidy(fit6)
+
+fit7 <- lm(target_death_rate ~ percent_married, data = tidy_data)
+tidy(fit7)
+
+fit8 = lm(target_death_rate ~ pct_bach_deg25_over, data = tidy_data)
+tidy(fit8)
+
+fit9 = lm(target_death_rate ~ pct_unemployed16_over, data = tidy_data)
+tidy(fit9)
+
+fit13 <- lm(target_death_rate ~ pct_non_black, data = tidy_data)
+tidy(fit13)
+
+fit14 <- lm(target_death_rate ~ birth_rate, data = tidy_data)
+tidy(fit14)
+
+fit15 <- lm(target_death_rate ~ region, data = tidy_data)
+tidy(fit15)
+
+## Begin forward elimination -- Step 1
+
+forward1 = lm(target_death_rate ~ pct_bach_deg25_over, data = tidy_data)
+tidy(forward1)
+
+fit1 = update(forward1, . ~ . +incidence_rate)
+tidy(fit1)
+
+fit2 = update(forward1, . ~ . +med_income)
+tidy(fit2)
+
+fit3 = update(forward1, . ~ . +pop_est2015)
+tidy(fit3)
+
+fit4 = update(forward1, . ~ . +study_per_cap)
+tidy(fit4)
+
+fit5 = update(forward1, . ~ . +median_age)
+tidy(fit5)
+
+fit6 = update(forward1, . ~ . +avg_household_size)
+tidy(fit6)
+
+fit7 = update(forward1, . ~ . +percent_married)
+tidy(fit7)
+
+fit8 = update(forward1, . ~ . +pct_unemployed16_over)
+tidy(fit8)
+
+fit12 = update(forward1, . ~ . +pct_non_black)
+tidy(fit12)
+
+fit13 = update(forward1, . ~ . +birth_rate)
+tidy(fit13)
+
+fit14 = update(forward1, . ~ . +region)
+tidy(fit14)
+
+## Step 2
+
+forward2 <- update(forward1, . ~ . +incidence_rate)
+tidy(forward2)
+
+fit1 = update(forward2, . ~ . +med_income)
+tidy(fit1)
+
+fit2 = update(forward2, . ~ . +pop_est2015)
+tidy(fit2)
+
+fit3 = update(forward2, . ~ . +study_per_cap)
+tidy(fit3)
+
+fit4 = update(forward2, . ~ . +median_age)
+tidy(fit4)
+
+fit5 = update(forward2, . ~ . +avg_household_size)
+tidy(fit5)
+
+fit6 = update(forward2, . ~ . +percent_married)
+tidy(fit6)
+
+fit7 = update(forward2, . ~ . +pct_unemployed16_over)
+tidy(fit7)
+
+fit11 = update(forward2, . ~ . +pct_non_black)
+tidy(fit11)
+
+fit12 = update(forward2, . ~ . +birth_rate)
+tidy(fit12)
+
+fit13 = update(forward2, . ~ . +region)
+tidy(fit13)
+
+## Step 3
+forward3 = update(forward2, . ~ . + region)
+tidy(forward3)
+
+fit1 = update(forward3, . ~ . +med_income)
+tidy(fit1)
+
+fit2 = update(forward3, . ~ . +pop_est2015)
+tidy(fit2)
+
+fit3 = update(forward3, . ~ . +study_per_cap)
+tidy(fit3)
+
+fit4 = update(forward3, . ~ . +median_age)
+tidy(fit4)
+
+fit5 = update(forward3, . ~ . +avg_household_size)
+tidy(fit5)
+
+fit6 = update(forward3, . ~ . +percent_married)
+tidy(fit6)
+
+fit7 = update(forward3, . ~ . +pct_unemployed16_over)
+tidy(fit7)
+
+fit10 = update(forward3, . ~ . +pct_non_black)
+tidy(fit10)
+
+fit11 = update(forward3, . ~ . +birth_rate)
+tidy(fit11)
+
+
+## Step 4
+forward4 = update(forward3, . ~ . + pct_unemployed16_over)
+tidy(forward4)
+
+fit1 = update(forward4, . ~ . +med_income)
+tidy(fit1)
+
+fit2 = update(forward4, . ~ . +pop_est2015)
+tidy(fit2)
+
+fit3 = update(forward4, . ~ . +study_per_cap)
+tidy(fit3)
+
+fit4 = update(forward4, . ~ . +median_age)
+tidy(fit4)
+
+fit5 = update(forward4, . ~ . +avg_household_size)
+tidy(fit5)
+
+fit6 = update(forward4, . ~ . +percent_married)
+tidy(fit6)
+
+
+fit10 = update(forward4, . ~ . +pct_non_black)
+tidy(fit10)
+
+fit11 = update(forward4, . ~ . +birth_rate)
+tidy(fit11)
+
+## Step 5
+forward5 = update(forward4, . ~ . + percent_married)
+tidy(forward5)
+
+fit1 = update(forward5, . ~ . +med_income)
+tidy(fit1)
+
+fit2 = update(forward5, . ~ . +pop_est2015)
+tidy(fit2)
+
+fit3 = update(forward5, . ~ . +study_per_cap)
+tidy(fit3)
+
+fit4 = update(forward5, . ~ . +median_age)
+tidy(fit4)
+
+fit5 = update(forward5, . ~ . +avg_household_size)
+tidy(fit5)
+
+fit9 = update(forward5, . ~ . +pct_non_black)
+tidy(fit9)
+
+fit10 = update(forward5, . ~ . +birth_rate)
+tidy(fit10)
+
+## Step 6
+
+forward6 = update(forward5, . ~ . + med_income)
+tidy(forward6)
+
+fit2 = update(forward6, . ~ . +pop_est2015)
+tidy(fit2)
+
+fit3 = update(forward6, . ~ . +study_per_cap)
+tidy(fit3)
+
+fit4 = update(forward6, . ~ . +median_age)
+tidy(fit4)
+
+fit5 = update(forward6, . ~ . +avg_household_size)
+tidy(fit5)
+
+fit8 = update(forward6, . ~ . +pct_non_black)
+tidy(fit8)
+
+fit9 = update(forward6, . ~ . +birth_rate)
+tidy(fit9)
+
+## Step 7
+
+forward7 = update(forward6, . ~ . + birth_rate)
+tidy(forward7)
+
+fit2 = update(forward7, . ~ . +pop_est2015)
+tidy(fit2)
+
+fit3 = update(forward7, . ~ . +study_per_cap)
+tidy(fit3)
+
+fit4 = update(forward7, . ~ . +median_age)
+tidy(fit4)
+
+fit5 = update(forward7, . ~ . +avg_household_size)
+tidy(fit5)
+
+fit6 = update(forward7, . ~ . +pct_non_black)
+tidy(fit6)
+
+
+## Predicted model from forward elimination: 
+mult_forward_fit = lm(target_death_rate ~ pct_bach_deg25_over + incidence_rate + region + pct_unemployed16_over + percent_married + med_income + birth_rate, data = tidy_data)
+
+tidy(mult_forward_fit)
+```
+
+best model is the same as the one using backward elimination.
+
+### *stepwise regression*
+
+```{r stepwise}
+full_model = lm(target_death_rate ~., data = tidy_data)
+
+step(full_model, direction='backward')
+```
+
+best model remains the same.
+
+## criterion-based approaches
+
+```{r criteria}
+
+# Summary of models for each size (one model per size)
+rs = regsubsets(target_death_rate~., data=tidy_data, nvmax = NULL) %>% summary()
+
+# Plots of Cp and Adj-R2 as functions of parameters
+par(mar=c(4,4,1,1))
+par(mfrow=c(1,2))
+
+plot(1:14, rs$cp, xlab="No of parameters", ylab="Cp Statistic")
+abline(0,1)
+
+plot(1:14, rs$adjr2, xlab="No of parameters", ylab="Adj R2")
+
+# look at other criteria
+
+best <- function(model, ...) 
+{
+  subsets <- regsubsets(formula(model), model.frame(model), nvmax = NULL, ...)
+  subsets <- with(summary(subsets),
+                  cbind(p = as.numeric(rownames(which)), which, rss, rsq, adjr2, cp, bic))
+  
+  return(subsets)
+}  
+
+best(full_model)
+```
+
+models with good performance in criteria:
+
+model_1:(p = 8) 
+region + pct_bach_deg25_over + percent_married +incidence_rate + med_income + pct_unemployed16_over + birth_rate
+
+model_2: (p = 9)
+pop_est2015 + model_1
+
+
+model_1 is the best model using automatic procedures. Also, considering the principle of parsimony, we choose to pick model_1 as our final model and its information is displayed below.
+
+```{r summary}
+best_fit = lm(target_death_rate ~ region + pct_bach_deg25_over + percent_married +incidence_rate + med_income + pct_unemployed16_over + birth_rate, data = tidy_data)
+
+summary(best_fit) %>% broom::tidy() %>%  knitr::kable(digits = 3) %>% kableExtra::kable_styling(full_width = T, position = "left")
+```
+
+# model diagnostics
+
+```{r diag}
+
+# rstandard function gives the INTERNALLY studentized residuals 
+stu_res = rstandard(best_fit)
+outliers_y = stu_res[abs(stu_res)>2.5]
+
+## no outliers in y is found according to rule of thumb
+MASS::boxcox(best_fit)
+
+# Measures of influence:
+# Gives DFFITS, Cook's Distance, Hat diagonal elements, and others.
+
+influence.measures(best_fit) %>%
+        summary()
+
+par(mfrow = c(2,2))
+plot(best_fit)
+
+# check collinearity, no violation.
+HH::vif(best_fit)
+```
+
+# cross validation
+```{r cv}
+set.seed(1)
+
+# summary function
+desc_summary = function(x){
+  tibble(mean = mean(x), 
+         median = median(x),
+         IQR = IQR(x),
+         sd = sd(x))
+} 
+
+# Use 10-fold validation and create the training sets
+data_train<-trainControl(method="cv", number = 10)
+
+# fit and repeat 
+
+cv_process = function(){
+  model_caret = train(formula(step5),
+                   data = tidy_data,
+                   trControl = data_train,
+                   method='lm',
+                   na.action=na.pass)
+  tibble(RMSE = model_caret$resample$RMSE,
+         MSE = RMSE^2)
+}
+
+all_MSE = rerun(10, cv_process()) %>% bind_rows() 
+all_MSE %>% ggplot(aes(x = RMSE)) + geom_histogram()
+
+
+RMSE_CV = desc_summary(all_MSE$RMSE) %>%
+  mutate(type = "RMSE_CV") %>% 
+  select(type, everything())
+RMSE_CV %>% knitr::kable(digits = 3)
+```
