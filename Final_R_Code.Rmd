@@ -64,7 +64,8 @@ boxplot(cancer_data$median_age)
 
 # 3. look at linear relationship
 
-## ralationship between cancer mortality rate and median age - unrealistic value observed!
+## ralationship with median age
+
 cancer_data %>%
   select(target_death_rate, median_age) %>% 
   ggplot(aes(x = median_age, y = target_death_rate)) +                    
@@ -86,17 +87,10 @@ num_var %>%
         geom_point(na.rm = TRUE) +
         geom_smooth(se = FALSE, method = "lm") 
 
-
- 
-# histogram of all variables 
-num_tidy = cancer_data %>%
-        select(-c(geography, binned_inc))
-
-ggplot(gather(num_tidy), aes(value)) + 
-    geom_histogram(bins = 10) + 
-    facet_wrap(~key, scales = 'free_x')
+# 4. check outcome distribution
 
 # plot the histogram of the outcome: target death rate
+
 cancer_data %>% 
   ggplot(aes(x = target_death_rate)) + 
     geom_histogram(aes(y = ..density..),  
@@ -111,10 +105,10 @@ cancer_data %>%
 
 ```
  
-Outcome variable target death rate has a normal distribution, which suggests linear regression could be an appropriate approach. Heavyly-left-skewed variables include avg_ann_count, avg_deaths_per_year, med_income, pop_est2015, median_age, pct_asian, pct_black, pct_other_race, study_per_cap. Right-skewed variable includes pct_white. We could consider categorising those continuous variables
+Outcome variable target death rate has a normal distribution, which suggests linear regression could be an appropriate approach. 
 
 
-tidy procedures:
+tidy procedures performed here:
 1. eliminate the three variables with large amount of missing data
 
 2. filter abnormal observations in `median_age`
@@ -191,8 +185,7 @@ summary(step4)
 
 # No pct_non_black
 step5<-update(step4, . ~ . - pop_est2015)
-#########################################################################
-summary(step5) %>% broom::tidy() %>%  knitr::kable(digits = 3) %>% kableExtra::kable_styling(full_width = T, position = "left")
+summary(step5)
 ```
 
 best model(7 predictors): 
@@ -566,22 +559,3 @@ RMSE_CV = desc_summary(all_MSE$RMSE) %>%
   select(type, everything())
 RMSE_CV %>% knitr::kable(digits = 3)
 ```
-=======
-## relationship between cancer mortality rate and 
-num_var %>%
-        select(-median_age) %>%
-  select(target_death_rate, avg_ann_count:birth_rate) %>% 
-  gather(key = key, value, avg_ann_count:birth_rate) %>%   
-  ggplot(aes(x = value, y = target_death_rate)) +                    
-    facet_wrap(~ key, scales = "free") +  
-    geom_point(na.rm = TRUE) +
-  geom_smooth(se = FALSE, method = "lm") 
-
-
-```
-Several unreasonable values can be observed in median age variable. 
-
-
-## 2.5 check collinearity 
-
->>>>>>> 4ecabe65784c5c588c2def7378d1237ac887a296
