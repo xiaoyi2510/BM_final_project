@@ -329,3 +329,10 @@ summary(mult_forward_fit)
 
 ```
 
+```{r}
+tidy_data %>% filter(median_age > 100)
+
+## 30 records have median ages greater than 100. We will remove these records from the data. While 30 records seems large, this amounts to less than 1% of the dataset.
+
+```
+
