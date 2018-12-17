@@ -483,10 +483,10 @@ best <- function(model, ...)
 
 models with good performance in criteria:
 
-model_1:(predictor = 8) 
+model_1:(parameter = 9) 
 region + pct_bach_deg25_over + percent_married +incidence_rate + med_income + pct_unemployed16_over + birth_rate
 
-model_2: (predictor = 9)
+model_2: (parameter = 10)
 pop_est2015 + model_1
 
 
@@ -495,7 +495,10 @@ model_1 is the best model using automatic procedures. Also, considering the prin
 ```{r summary}
 best_fit = lm(target_death_rate ~ region + pct_bach_deg25_over + percent_married +incidence_rate + med_income + pct_unemployed16_over + birth_rate, data = tidy_data)
 
-summary(best_fit) %>% broom::tidy() %>%  knitr::kable(digits = 3) %>% kableExtra::kable_styling(full_width = T, position = "left")
+summary(best_fit)%>% 
+        broom::tidy() %>% 
+        knitr::kable(digits = 3) %>%
+        kableExtra::kable_styling(full_width = T, position = "left")
 ```
 
 # model diagnostics

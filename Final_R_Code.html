@@ -3093,12 +3093,15 @@ best &lt;- function(model, ...)
   return(subsets)
 }  </code></pre>
 <p>models with good performance in criteria:</p>
-<p>model_1:(predictor = 8) region + pct_bach_deg25_over + percent_married +incidence_rate + med_income + pct_unemployed16_over + birth_rate</p>
-<p>model_2: (predictor = 9) pop_est2015 + model_1</p>
+<p>model_1:(parameter = 9) region + pct_bach_deg25_over + percent_married +incidence_rate + med_income + pct_unemployed16_over + birth_rate</p>
+<p>model_2: (parameter = 10) pop_est2015 + model_1</p>
 <p>model_1 is the best model using automatic procedures. Also, considering the principle of parsimony, we choose to pick model_1 as our final model and its information is displayed below.</p>
 <pre class="r"><code>best_fit = lm(target_death_rate ~ region + pct_bach_deg25_over + percent_married +incidence_rate + med_income + pct_unemployed16_over + birth_rate, data = tidy_data)
 
-summary(best_fit) %&gt;% broom::tidy() %&gt;%  knitr::kable(digits = 3) %&gt;% kableExtra::kable_styling(full_width = T, position = &quot;left&quot;)</code></pre>
+summary(best_fit)%&gt;% 
+        broom::tidy() %&gt;% 
+        knitr::kable(digits = 3) %&gt;%
+        kableExtra::kable_styling(full_width = T, position = &quot;left&quot;)</code></pre>
 <table class="table" style>
 <thead>
 <tr>
