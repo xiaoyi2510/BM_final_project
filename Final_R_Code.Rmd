@@ -463,10 +463,10 @@ rs = regsubsets(target_death_rate~., data=tidy_data, nvmax = NULL) %>% summary()
 par(mar=c(4,4,1,1))
 par(mfrow=c(1,2))
 
-plot(1:14, rs$cp, xlab="No of parameters", ylab="Cp Statistic")
+plot(2:15, rs$cp, xlab="No of parameters", ylab="Cp Statistic")
 abline(0,1)
 
-plot(1:14, rs$adjr2, xlab="No of parameters", ylab="Adj R2")
+plot(2:15, rs$adjr2, xlab="No of parameters", ylab="Adj R2")
 
 # look at other criteria
 
@@ -479,15 +479,14 @@ best <- function(model, ...)
   return(subsets)
 }  
 
-best(full_model)
 ```
 
 models with good performance in criteria:
 
-model_1:(p = 8) 
+model_1:(predictor = 8) 
 region + pct_bach_deg25_over + percent_married +incidence_rate + med_income + pct_unemployed16_over + birth_rate
 
-model_2: (p = 9)
+model_2: (predictor = 9)
 pop_est2015 + model_1
 
 
