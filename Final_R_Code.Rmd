@@ -2,7 +2,7 @@
 title: "Modeling Variation of Cancer Mortality Rate in the United States"
 author: "Group 1: Samantha Brown, Ruiyang Li, Jiyue Qin, Yi Xiao"
 date: "12/16/2018"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -36,7 +36,7 @@ num_var <- cancer_data %>%
 
 # summary table for all numberical variables:
  
-num_var %>% skimr::skim_to_wide()%>% knitr::kable(digits = 3) %>% kableExtra::kable_styling(full_width = T, position = "left")
+num_var %>% skimr::skim_to_wide()%>% knitr::kable(digits = 3, "latex") %>% kableExtra::kable_styling(latex_options = "striped", position = "float_left")
 
 
 # 1. check missing data
@@ -53,8 +53,8 @@ cancer_data %>%
         knitr::kable(col.names = c("variable name",
                            "number of missing value",
                            "percent"
-                           )) %>%
-        kableExtra::kable_styling(position = "left")
+                           ), "latex") %>%
+        kableExtra::kable_styling(latex_options = "striped", position = "float_left")
 
 # 2. check abnormal values 
 
@@ -154,7 +154,7 @@ tidy_data %>% select(-region) %>%
         corrplot(method = "square", addCoef.col = "black", tl.col="black", tl.srt=45, insig = "blank", diag=FALSE, number.cex = .7)
 
 # descriptive statistics of selected variables
-tidy_data %>% select(-region) %>% skimr::skim_to_wide()%>% knitr::kable(digits = 3) %>% kableExtra::kable_styling(full_width = T, position = "left")
+tidy_data %>% select(-region) %>% skimr::skim_to_wide()%>% knitr::kable(digits = 3, "latex") %>% kableExtra::kable_styling(latex_options = "striped", position = "float_left")
 ```
 
 # model selection
@@ -496,7 +496,7 @@ model_1 is the best model using automatic procedures. Also, considering the prin
 ```{r summary}
 best_fit = lm(target_death_rate ~ region + pct_bach_deg25_over + percent_married +incidence_rate + med_income + pct_unemployed16_over + birth_rate, data = tidy_data)
 
-summary(best_fit) %>% broom::tidy() %>%  knitr::kable(digits = 3) %>% kableExtra::kable_styling(full_width = T, position = "left")
+summary(best_fit) %>% broom::tidy() %>%  knitr::kable(digits = 3, "latex") %>% kableExtra::kable_styling(latex_options = "striped", position = "float_left")
 ```
 
 # model diagnostics
@@ -557,5 +557,5 @@ all_MSE %>% ggplot(aes(x = RMSE)) + geom_histogram()
 RMSE_CV = desc_summary(all_MSE$RMSE) %>%
   mutate(type = "RMSE_CV") %>% 
   select(type, everything())
-RMSE_CV %>% knitr::kable(digits = 3)
+RMSE_CV %>% knitr::kable(digits = 3, "latex")
 ```
