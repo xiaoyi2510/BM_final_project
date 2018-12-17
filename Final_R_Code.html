@@ -3870,8 +3870,10 @@ all_MSE %&gt;% ggplot(aes(x = RMSE)) + geom_histogram()</code></pre>
 <pre class="r"><code>RMSE_CV = desc_summary(all_MSE$RMSE) %&gt;%
   mutate(type = &quot;RMSE_CV&quot;) %&gt;% 
   select(type, everything())
-RMSE_CV %&gt;% knitr::kable(digits = 3)</code></pre>
-<table>
+
+RMSE_CV %&gt;% knitr::kable(digits = 3) %&gt;% 
+        kableExtra::kable_styling(full_width = T, position = &quot;left&quot;)</code></pre>
+<table class="table" style>
 <thead>
 <tr>
 <th style="text-align:left;">
